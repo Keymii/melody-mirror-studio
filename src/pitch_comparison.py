@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Optional
 
 NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
@@ -29,7 +30,7 @@ class MidiRangeTracker:
 
         self.valid_count += 1
 
-    def get_range(self) -> tuple or None:
+    def get_range(self) -> Optional[tuple]:
         """Returns (min_midi, max_midi) or None if no valid values have been recorded."""
         if self.min_midi is None:
             return None
