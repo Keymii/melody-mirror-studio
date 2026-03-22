@@ -1,6 +1,6 @@
 # MelodyMirror Studio
 
-![Screeshot of MelodyMirror Studio](images\screenshot.png)
+![Screeshot of MelodyMirror Studio](./images/screenshot.png)
 
 ## Overview
 MelodyMirror Studio is a desktop tool for real-time vocal practice and pitch matching. It lets you load a song from YouTube, optionally isolate vocals, transpose to a comfortable key, and compare live microphone pitch against the song reference while viewing feedback on note accuracy.
