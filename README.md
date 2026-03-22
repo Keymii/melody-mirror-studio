@@ -16,13 +16,13 @@ The application is designed for practical rehearsal workflows: quick song loadin
 
 ## Project Structure
 - main.py: Minimal application entrypoint.
-- gui.py: Tkinter GUI and interaction flow.
-- audio_download.py: YouTube download and local cache helpers.
-- vocal_extraction.py: Demucs-based vocal extraction helpers.
-- audio_processing.py: Audio loading, transpose, and processing orchestration.
-- microphone_engine.py: Audio stream engine and background pitch worker process.
-- pitch_comparison.py: Pitch estimation and note-comparison helpers.
-- config.py: Shared constants.
+- src/gui.py: Tkinter GUI and interaction flow.
+- src/audio_download.py: YouTube download and local cache helpers.
+- src/vocal_extraction.py: Demucs-based vocal extraction helpers.
+- src/audio_processing.py: Audio loading, transpose, and processing orchestration.
+- src/microphone_engine.py: Audio stream engine and background pitch worker process.
+- src/pitch_comparison.py: Pitch estimation and note-comparison helpers.
+- src/config.py: Shared constants.
 
 ## Setup
 ### 1. Clone and enter the project

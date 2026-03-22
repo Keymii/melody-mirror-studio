@@ -5,8 +5,8 @@ import threading
 import numpy as np
 import sounddevice as sd
 
-from config import BLOCK, MAX_QUEUE_CHUNKS
-from pitch_comparison import estimate_pitch
+from src.config import BLOCK, MAX_QUEUE_CHUNKS
+from src.pitch_comparison import estimate_pitch
 
 
 def queue_put_latest(q_obj, item):

@@ -10,11 +10,11 @@ import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-from audio_download import download_audio, get_cached_wav_path_for_url
-from audio_processing import load_cached_or_legacy_audio, load_audio_mono, prepare_processed_audio
-from config import MAX_MIDI, MIN_MIDI, SR
-from microphone_engine import AudioEngine
-from pitch_comparison import freq_to_note, midi_to_note_label, tuner_feedback
+from src.audio_download import download_audio, get_cached_wav_path_for_url
+from src.audio_processing import load_cached_or_legacy_audio, load_audio_mono, prepare_processed_audio
+from src.config import MAX_MIDI, MIN_MIDI, SR
+from src.microphone_engine import AudioEngine
+from src.pitch_comparison import freq_to_note, midi_to_note_label, tuner_feedback
 
 matplotlib.use("TkAgg")
 
@@ -33,7 +33,7 @@ class SingingPracticeGUI:
         self.mic_plot_data = collections.deque(maxlen=240)
         self.song_plot_data = collections.deque(maxlen=240)
 
-        self.url_var = tk.StringVar(value="https://www.youtube.com/watch?v=NwFVSclD_uc")
+        self.url_var = tk.StringVar(value="")
         self.cache_status_var = tk.StringVar(value="")
         self.transpose_var = tk.DoubleVar(value=0.0)
         self.axis_margin_var = tk.DoubleVar(value=6.0)

@@ -3,9 +3,9 @@ import os
 import librosa
 import numpy as np
 
-from config import SR
-from pitch_comparison import estimate_midi_range_from_audio
-from vocal_extraction import extract_vocals_reference, get_demucs_cache_path
+from src.config import SR
+from src.pitch_comparison import estimate_midi_range_from_audio
+from src.vocal_extraction import extract_vocals_reference, get_demucs_cache_path
 
 
 def load_audio_mono(path: str, sr: int = SR) -> np.ndarray:
