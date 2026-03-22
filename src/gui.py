@@ -14,7 +14,7 @@ from src.audio_download import download_audio, get_cached_wav_path_for_url
 from src.audio_processing import load_cached_or_legacy_audio, load_audio_mono, prepare_processed_audio
 from src.config import MAX_MIDI, MIN_MIDI, SR
 from src.microphone_engine import AudioEngine
-from src.pitch_comparison import freq_to_note, midi_to_note_label, tuner_feedback
+from src.pitch_comparison import freq_to_note, midi_to_note_label, tuner_feedback, MidiRangeTracker, estimate_midi_range_from_audio
 
 matplotlib.use("TkAgg")
 
@@ -34,6 +34,10 @@ class SingingPracticeGUI:
         self.mic_plot_data = collections.deque(maxlen=240)
         self.song_plot_data = collections.deque(maxlen=240)
 
+        # MIDI range trackers
+        self.mic_range_tracker = MidiRangeTracker()
+        self.song_range_tracker = MidiRangeTracker()
+
         self.url_var = tk.StringVar(value="")
         self.cache_status_var = tk.StringVar(value="")
         self.transpose_var = tk.DoubleVar(value=0.0)
@@ -47,6 +51,8 @@ class SingingPracticeGUI:
         self.mic_note_var = tk.StringVar(value="Mic: -")
         self.diff_var = tk.StringVar(value="Diff: -")
         self.feedback_var = tk.StringVar(value="Feedback: -")
+        self.mic_range_var = tk.StringVar(value="Mic range: -")
+        self.song_range_var = tk.StringVar(value="Song range: -")
         self.playback_pos_var = tk.DoubleVar(value=0.0)
         self.play_pause_var = tk.StringVar(value="Play")
         self.playback_time_var = tk.StringVar(value="00:00 / 00:00")
@@ -210,7 +216,9 @@ class SingingPracticeGUI:
         ttk.Label(stats, textvariable=self.mic_note_var, style="StatValue.TLabel").grid(row=0, column=1, padx=10, pady=8, sticky="w")
         ttk.Label(stats, textvariable=self.diff_var, style="StatValue.TLabel").grid(row=1, column=0, padx=10, pady=8, sticky="w")
         ttk.Label(stats, textvariable=self.feedback_var, style="StatValue.TLabel").grid(row=1, column=1, padx=10, pady=8, sticky="w")
-        ttk.Label(stats, textvariable=self.status_var, style="Meta.TLabel").grid(row=2, column=0, columnspan=2, padx=10, pady=8, sticky="w")
+        ttk.Label(stats, textvariable=self.mic_range_var, style="Meta.TLabel").grid(row=2, column=0, padx=10, pady=6, sticky="w")
+        ttk.Label(stats, textvariable=self.song_range_var, style="Meta.TLabel").grid(row=2, column=1, padx=10, pady=6, sticky="w")
+        ttk.Label(stats, textvariable=self.status_var, style="Meta.TLabel").grid(row=3, column=0, columnspan=2, padx=10, pady=8, sticky="w")
         stats.columnconfigure(0, weight=1)
         stats.columnconfigure(1, weight=1)
 
@@ -338,6 +346,19 @@ class SingingPracticeGUI:
             self.demucs_progress.stop()
             self.demucs_progress_var.set("Demucs: idle")
 
+    def _analyze_song_midi_range(self, audio_data: np.ndarray) -> tuple:
+        """Analyze the MIDI range from the entire song for pre-playback information."""
+        try:
+            result = estimate_midi_range_from_audio(audio_data, SR)
+            if result is not None:
+                low_midi, high_midi = result
+                low_note = midi_to_note_label(int(round(low_midi)))
+                high_note = midi_to_note_label(int(round(high_midi)))
+                return (low_note, high_note)
+        except Exception:
+            pass
+        return (None, None)
+
     def _check_cache_for_url(self):
         url = self.url_var.get().strip()
         if not url:
@@ -427,6 +448,13 @@ class SingingPracticeGUI:
                     low_lim, high_lim = result["axis_limits"]
                     self._set_pitch_axis_limits(low_lim, high_lim)
 
+                    # Analyze song's MIDI range for pre-playback info
+                    song_low_note, song_high_note = self._analyze_song_midi_range(self.reference_audio_data)
+                    if song_low_note and song_high_note:
+                        self.song_range_var.set(f"Song range: {song_low_note} - {song_high_note}")
+                    else:
+                        self.song_range_var.set("Song range: (analysis pending)")
+
                     self.status_var.set(
                         f"Processed {len(self.audio_data) / SR:.1f}s at transpose {self.transpose_var.get():+.0f}.\n"
                         f"Playback: {result['playback_label']}. Pitch reference: {result['reference_label']}. \n"
@@ -453,6 +481,8 @@ class SingingPracticeGUI:
 
         self.mic_plot_data.clear()
         self.song_plot_data.clear()
+        self.mic_range_tracker.reset()
+        self.song_range_tracker.reset()
         self.engine = AudioEngine(self.audio_data, self.reference_audio_data, SR)
 
         try:
@@ -498,6 +528,16 @@ class SingingPracticeGUI:
 
                 song_note, song_midi = freq_to_note(song_pitch)
                 mic_note, mic_midi = freq_to_note(mic_pitch)
+
+                # Update MIDI range trackers
+                if song_midi is not None:
+                    self.song_range_tracker.update(float(song_midi))
+                if mic_midi is not None:
+                    self.mic_range_tracker.update(float(mic_midi))
+
+                # Update range display
+                self.mic_range_var.set(f"Mic range: {self.mic_range_tracker.get_range_notes()}")
+                self.song_range_var.set(f"Song range: {self.song_range_tracker.get_range_notes()}")
 
                 self.song_note_var.set(f"Song: {song_note} ({song_pitch:.1f} Hz)" if song_pitch > 0 else "Song: -")
                 self.mic_note_var.set(f"Mic:  {mic_note} ({mic_pitch:.1f} Hz)" if mic_pitch > 0 else "Mic: -")

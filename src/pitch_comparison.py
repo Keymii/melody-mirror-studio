@@ -6,6 +6,54 @@ NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 # Allowed values: "parselmouth", "librosa"
 PITCH_BACKEND = "librosa"
 
+
+class MidiRangeTracker:
+    """Tracks the minimum and maximum MIDI values encountered during audio processing."""
+
+    def __init__(self):
+        self.min_midi = None
+        self.max_midi = None
+        self.valid_count = 0
+
+    def update(self, midi_value: float) -> None:
+        """Update tracker with a new MIDI value. Ignores 0, None, and non-finite values."""
+        if midi_value is None or midi_value == 0 or not np.isfinite(midi_value):
+            return
+
+        if self.min_midi is None:
+            self.min_midi = midi_value
+            self.max_midi = midi_value
+        else:
+            self.min_midi = min(self.min_midi, midi_value)
+            self.max_midi = max(self.max_midi, midi_value)
+
+        self.valid_count += 1
+
+    def get_range(self) -> tuple or None:
+        """Returns (min_midi, max_midi) or None if no valid values have been recorded."""
+        if self.min_midi is None:
+            return None
+        return (self.min_midi, self.max_midi)
+
+    def get_range_notes(self) -> str:
+        """Returns a human-readable string of the detected MIDI range."""
+        if self.min_midi is None:
+            return "No data"
+
+        min_note = midi_to_note_label(int(round(self.min_midi)))
+        max_note = midi_to_note_label(int(round(self.max_midi)))
+        return f"{min_note} - {max_note}"
+
+    def reset(self) -> None:
+        """Reset the tracker to initial state."""
+        self.min_midi = None
+        self.max_midi = None
+        self.valid_count = 0
+
+    def has_data(self) -> bool:
+        """Returns True if the tracker has recorded any valid MIDI values."""
+        return self.valid_count > 0
+
 try:
     import parselmouth
 
