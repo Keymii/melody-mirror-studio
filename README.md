@@ -27,8 +27,8 @@ The application is designed for practical rehearsal workflows: quick song loadin
 ## Setup
 ### 1. Clone and enter the project
 ```powershell
-git clone <your-repo-url>
-cd singing-practice-app
+git clone https://github.com/Keymii/melody-mirror-studio.git
+cd melody-mirror-studio
 ```
 
 ### 2. Create and activate a virtual environment
