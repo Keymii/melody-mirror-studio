@@ -23,7 +23,8 @@ class SingingPracticeGUI:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("MelodyMirror Studio - Real-time Pitch Match")
-        self.root.geometry("980x700")
+        self.root.geometry("1320x760")
+        self.root.minsize(1160, 680)
 
         self.audio_data = None
         self.reference_audio_data = None
@@ -52,37 +53,123 @@ class SingingPracticeGUI:
         self.seek_dragging = False
         self.track_duration_seconds = 0.0
 
+        self.vocal_ranges = [
+            ("Soprano", "C4", "A5", "#ffe4ec"),
+            ("Mezzo-soprano", "A3", "F#5", "#ffeedd"),
+            ("Alto", "G3", "E5", "#fff7cc"),
+            ("Contralto", "F3", "D5", "#f6f1cc"),
+            ("Tenor", "C3", "A4", "#e8f7dd"),
+            ("Baritone", "A2", "F4", "#dff3f2"),
+            ("Bass", "F2", "E4", "#e7ebfb"),
+        ]
+
+        self._apply_theme()
         self._build_ui()
         self.url_var.trace_add("write", self._on_url_change)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self._check_cache_for_url()
         self._poll_results()
 
+    def _apply_theme(self):
+        self.colors = {
+            "bg": "#f4f7fb",
+            "card": "#ffffff",
+            "text": "#14213d",
+            "muted": "#5b6475",
+            "accent": "#0f8b8d",
+            "accent_active": "#0c6f71",
+            "line_mic": "#2f80ed",
+            "line_song": "#27ae60",
+            "grid": "#e7ecf3",
+        }
+
+        self.root.configure(bg=self.colors["bg"])
+        style = ttk.Style(self.root)
+        style.theme_use("clam")
+
+        style.configure("App.TFrame", background=self.colors["bg"])
+        style.configure("Card.TLabelframe", background=self.colors["card"], borderwidth=1, relief="solid")
+        style.configure(
+            "Card.TLabelframe.Label",
+            background=self.colors["bg"],
+            foreground=self.colors["text"],
+            font=("Segoe UI Semibold", 11),
+        )
+        style.configure("Card.TFrame", background=self.colors["card"])
+
+        style.configure("AppTitle.TLabel", background=self.colors["bg"], foreground=self.colors["text"], font=("Segoe UI Semibold", 18))
+        style.configure("AppSubtitle.TLabel", background=self.colors["bg"], foreground=self.colors["muted"], font=("Segoe UI", 10))
+
+        style.configure("TLabel", background=self.colors["card"], foreground=self.colors["text"], font=("Segoe UI", 10))
+        style.configure("Meta.TLabel", background=self.colors["card"], foreground=self.colors["muted"], font=("Segoe UI", 9))
+        style.configure("StatValue.TLabel", background=self.colors["card"], foreground=self.colors["text"], font=("Segoe UI Semibold", 12))
+
+        style.configure(
+            "Accent.TButton",
+            font=("Segoe UI Semibold", 10),
+            padding=(14, 8),
+            background=self.colors["accent"],
+            foreground="#ffffff",
+            borderwidth=0,
+            focusthickness=0,
+        )
+        style.map(
+            "Accent.TButton",
+            background=[("active", self.colors["accent_active"]), ("pressed", self.colors["accent_active"])],
+            foreground=[("disabled", "#d8e0ea")],
+        )
+
+        style.configure("TEntry", fieldbackground="#ffffff", padding=6)
+        style.configure("TSpinbox", arrowsize=14)
+        style.configure("TCheckbutton", background=self.colors["card"], foreground=self.colors["text"], font=("Segoe UI", 10))
+
+        style.configure("TProgressbar", troughcolor="#dfe6ee", background=self.colors["accent"], lightcolor=self.colors["accent"], darkcolor=self.colors["accent"])
+        style.configure("Horizontal.TScale", background=self.colors["card"], troughcolor="#dfe6ee")
+
     def _build_ui(self):
-        frame = ttk.Frame(self.root, padding=12)
+        frame = ttk.Frame(self.root, padding=14, style="App.TFrame")
         frame.pack(fill=tk.BOTH, expand=True)
 
-        controls = ttk.LabelFrame(frame, text="Source")
+        header = ttk.Frame(frame, style="App.TFrame")
+        header.pack(fill=tk.X, pady=(0, 10))
+        ttk.Label(header, text="MelodyMirror Studio", style="AppTitle.TLabel").pack(anchor="w")
+        ttk.Label(header, text="Refine pitch, track notes, and rehearse with live feedback.", style="AppSubtitle.TLabel").pack(anchor="w", pady=(2, 0))
+
+        content = ttk.Frame(frame, style="App.TFrame")
+        content.pack(fill=tk.BOTH, expand=True)
+        content.columnconfigure(0, weight=0)
+        content.columnconfigure(1, weight=1)
+        content.rowconfigure(0, weight=1)
+
+        left_panel = ttk.Frame(content, style="App.TFrame")
+        left_panel.grid(row=0, column=0, sticky="nsw", padx=(0, 12))
+
+        right_panel = ttk.Frame(content, style="App.TFrame")
+        right_panel.grid(row=0, column=1, sticky="nsew")
+        right_panel.columnconfigure(0, weight=1)
+        right_panel.rowconfigure(1, weight=1)
+
+        controls = ttk.LabelFrame(left_panel, text="Settings", style="Card.TLabelframe", padding=10)
         controls.pack(fill=tk.X, pady=(0, 10))
 
         ttk.Label(controls, text="YouTube URL").grid(row=0, column=0, padx=6, pady=8, sticky="w")
-        ttk.Entry(controls, textvariable=self.url_var, width=80).grid(row=0, column=1, columnspan=5, padx=6, pady=8, sticky="we")
+        ttk.Entry(controls, textvariable=self.url_var, width=42).grid(row=1, column=0, columnspan=4, padx=6, pady=(0, 8), sticky="we")
 
-        ttk.Label(controls, textvariable=self.cache_status_var, foreground="#666666", font=("Segoe UI", 9)).grid(row=1, column=1, columnspan=5, padx=6, pady=(0, 8), sticky="w")
+        ttk.Label(controls, textvariable=self.cache_status_var, style="Meta.TLabel").grid(row=2, column=0, columnspan=4, padx=6, pady=(0, 8), sticky="w")
 
         ttk.Checkbutton(
             controls,
             text="Use extracted vocals for pitch reference",
             variable=self.use_vocals_ref_var,
-        ).grid(row=2, column=0, columnspan=3, padx=6, pady=6, sticky="w")
+        ).grid(row=3, column=0, columnspan=4, padx=6, pady=6, sticky="w")
 
         ttk.Checkbutton(
             controls,
             text="Play extracted vocals (instead of original track)",
             variable=self.use_vocals_play_var,
-        ).grid(row=2, column=3, columnspan=3, padx=6, pady=6, sticky="w")
+        ).grid(row=4, column=0, columnspan=4, padx=6, pady=6, sticky="w")
 
-        ttk.Label(controls, text="Transpose (semitones)").grid(row=3, column=0, padx=6, pady=8, sticky="w")
+        ttk.Label(controls, text="Transpose (semitones)").grid(row=5, column=0, padx=6, pady=(10, 6), sticky="w")
         ttk.Spinbox(
             controls,
             from_=-12,
@@ -90,9 +177,9 @@ class SingingPracticeGUI:
             increment=1,
             textvariable=self.transpose_var,
             width=8,
-        ).grid(row=3, column=1, padx=6, pady=8, sticky="w")
+        ).grid(row=5, column=1, padx=6, pady=(10, 6), sticky="w")
 
-        ttk.Label(controls, text="Axis margin (semitones)").grid(row=3, column=2, padx=6, pady=8, sticky="w")
+        ttk.Label(controls, text="Axis margin").grid(row=5, column=2, padx=6, pady=(10, 6), sticky="w")
         ttk.Spinbox(
             controls,
             from_=2,
@@ -100,34 +187,35 @@ class SingingPracticeGUI:
             increment=1,
             textvariable=self.axis_margin_var,
             width=8,
-        ).grid(row=3, column=3, padx=6, pady=8, sticky="w")
+        ).grid(row=5, column=3, padx=6, pady=(10, 6), sticky="w")
 
         btns = ttk.Frame(controls)
-        btns.grid(row=3, column=4, columnspan=2, sticky="e", padx=6, pady=(4, 8))
+        btns.grid(row=6, column=0, columnspan=4, sticky="w", padx=6, pady=(10, 8))
 
-        ttk.Button(btns, text="Download and Load", command=self._download_and_process_song).pack(side=tk.LEFT, padx=(0, 8))
+        ttk.Button(btns, text="Load Audio", style="Accent.TButton", command=self._download_and_process_song).pack(side=tk.LEFT, padx=(0, 8))
 
-        ttk.Label(controls, textvariable=self.demucs_progress_var).grid(row=4, column=0, padx=6, pady=(0, 4), sticky="w")
+        ttk.Label(controls, textvariable=self.demucs_progress_var, style="Meta.TLabel").grid(row=7, column=0, columnspan=4, padx=6, pady=(0, 4), sticky="w")
         self.demucs_progress = ttk.Progressbar(controls, orient=tk.HORIZONTAL, mode="indeterminate", length=260)
-        self.demucs_progress.grid(row=4, column=1, columnspan=5, padx=6, pady=(0, 8), sticky="we")
+        self.demucs_progress.grid(row=8, column=0, columnspan=4, padx=6, pady=(0, 8), sticky="we")
 
-        controls.columnconfigure(1, weight=2)
+        controls.columnconfigure(0, weight=1)
+        controls.columnconfigure(1, weight=0)
         controls.columnconfigure(2, weight=0)
-        controls.columnconfigure(3, weight=1)
-        controls.columnconfigure(4, weight=0)
-        controls.columnconfigure(5, weight=0)
+        controls.columnconfigure(3, weight=0)
 
-        stats = ttk.LabelFrame(frame, text="Live Pitch")
+        stats = ttk.LabelFrame(left_panel, text="Live Pitch", style="Card.TLabelframe", padding=10)
         stats.pack(fill=tk.X, pady=(0, 10))
 
-        ttk.Label(stats, textvariable=self.song_note_var, font=("Segoe UI", 12, "bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w")
-        ttk.Label(stats, textvariable=self.mic_note_var, font=("Segoe UI", 12, "bold")).grid(row=0, column=1, padx=10, pady=8, sticky="w")
-        ttk.Label(stats, textvariable=self.diff_var, font=("Segoe UI", 12)).grid(row=1, column=0, padx=10, pady=8, sticky="w")
-        ttk.Label(stats, textvariable=self.feedback_var, font=("Segoe UI", 12)).grid(row=1, column=1, padx=10, pady=8, sticky="w")
-        ttk.Label(stats, textvariable=self.status_var).grid(row=2, column=0, columnspan=2, padx=10, pady=8, sticky="w")
+        ttk.Label(stats, textvariable=self.song_note_var, style="StatValue.TLabel").grid(row=0, column=0, padx=10, pady=8, sticky="w")
+        ttk.Label(stats, textvariable=self.mic_note_var, style="StatValue.TLabel").grid(row=0, column=1, padx=10, pady=8, sticky="w")
+        ttk.Label(stats, textvariable=self.diff_var, style="StatValue.TLabel").grid(row=1, column=0, padx=10, pady=8, sticky="w")
+        ttk.Label(stats, textvariable=self.feedback_var, style="StatValue.TLabel").grid(row=1, column=1, padx=10, pady=8, sticky="w")
+        ttk.Label(stats, textvariable=self.status_var, style="Meta.TLabel").grid(row=2, column=0, columnspan=2, padx=10, pady=8, sticky="w")
+        stats.columnconfigure(0, weight=1)
+        stats.columnconfigure(1, weight=1)
 
-        playback = ttk.LabelFrame(frame, text="Playback")
-        playback.pack(fill=tk.X, pady=(0, 10))
+        playback = ttk.LabelFrame(right_panel, text="Playback", style="Card.TLabelframe", padding=10)
+        playback.grid(row=0, column=0, sticky="ew", pady=(0, 10))
 
         self.playback_slider = ttk.Scale(
             playback,
@@ -148,26 +236,86 @@ class SingingPracticeGUI:
             playback_controls,
             textvariable=self.play_pause_var,
             command=self._toggle_play_pause,
+            style="Accent.TButton",
             width=10,
         ).pack(side=tk.LEFT)
-        ttk.Label(playback_controls, textvariable=self.playback_time_var).pack(side=tk.RIGHT)
+        ttk.Label(playback_controls, textvariable=self.playback_time_var, style="Meta.TLabel").pack(side=tk.RIGHT)
 
-        fig = Figure(figsize=(9.2, 3.8), dpi=100)
+        plot_card = ttk.LabelFrame(right_panel, text="Pitch Plot", style="Card.TLabelframe", padding=8)
+        plot_card.grid(row=1, column=0, sticky="nsew")
+        plot_card.rowconfigure(0, weight=1)
+        plot_card.columnconfigure(0, weight=1)
+
+        fig = Figure(figsize=(9.2, 4.8), dpi=100)
+        fig.patch.set_facecolor(self.colors["card"])
         self.ax = fig.add_subplot(111)
+        self.ax.set_facecolor("#fbfcfe")
         self.ax.set_title("Mic vs Song Pitch (Notes)")
         self.ax.set_ylim(48, 84)
         self.ax.set_xlim(0, 240)
         self.ax.set_xlabel("Recent frames")
         self.ax.set_ylabel("Pitch (note / MIDI number)")
+        self.ax.grid(axis="y", color=self.colors["grid"], linewidth=0.9)
+        self._add_vocal_range_background()
+        for side in ("top", "right"):
+            self.ax.spines[side].set_visible(False)
+        self.ax.spines["left"].set_color("#c9d5e3")
+        self.ax.spines["bottom"].set_color("#c9d5e3")
         self._set_pitch_axis_limits(48, 84)
-        self.mic_plot_line, = self.ax.plot([], [], color="#2f80ed", linewidth=1.8, label="Mic")
-        self.song_plot_line, = self.ax.plot([], [], color="#27ae60", linewidth=1.8, alpha=0.9, label="Song")
+        self.mic_plot_line, = self.ax.plot([], [], color=self.colors["line_mic"], linewidth=2.0, label="Mic")
+        self.song_plot_line, = self.ax.plot([], [], color=self.colors["line_song"], linewidth=2.0, alpha=0.95, label="Song")
         self.ax.legend(loc="upper right")
 
-        canvas = FigureCanvasTkAgg(fig, master=frame)
+        canvas = FigureCanvasTkAgg(fig, master=plot_card)
         canvas_widget = canvas.get_tk_widget()
-        canvas_widget.pack(fill=tk.BOTH, expand=True)
+        canvas_widget.grid(row=0, column=0, sticky="nsew")
         self.canvas = canvas
+
+    def _note_to_midi(self, note: str) -> int:
+        note_map = {
+            "C": 0,
+            "C#": 1,
+            "D": 2,
+            "D#": 3,
+            "E": 4,
+            "F": 5,
+            "F#": 6,
+            "G": 7,
+            "G#": 8,
+            "A": 9,
+            "A#": 10,
+            "B": 11,
+        }
+
+        if len(note) < 2:
+            raise ValueError(f"Invalid note format: {note}")
+
+        if len(note) >= 3 and note[1] == "#":
+            pitch = note[:2]
+            octave = int(note[2:])
+        else:
+            pitch = note[0]
+            octave = int(note[1:])
+
+        return (octave + 1) * 12 + note_map[pitch]
+
+    def _add_vocal_range_background(self):
+        for name, low_note, high_note, color in self.vocal_ranges:
+            low_midi = self._note_to_midi(low_note)
+            high_midi = self._note_to_midi(high_note)
+            self.ax.axhspan(low_midi, high_midi, color=color, alpha=0.45, zorder=0)
+            self.ax.text(
+                0.01,
+                (low_midi + high_midi) / 2,
+                name,
+                transform=self.ax.get_yaxis_transform(),
+                va="center",
+                ha="left",
+                fontsize=8,
+                color="#5b6475",
+                alpha=0.9,
+                zorder=1,
+            )
 
     def _set_pitch_axis_limits(self, low_midi: float, high_midi: float):
         low = max(MIN_MIDI, int(np.floor(low_midi)))
@@ -280,8 +428,8 @@ class SingingPracticeGUI:
                     self._set_pitch_axis_limits(low_lim, high_lim)
 
                     self.status_var.set(
-                        f"Processed {len(self.audio_data) / SR:.1f}s at transpose {self.transpose_var.get():+.0f}. "
-                        f"Playback: {result['playback_label']}. Pitch reference: {result['reference_label']}. "
+                        f"Processed {len(self.audio_data) / SR:.1f}s at transpose {self.transpose_var.get():+.0f}.\n"
+                        f"Playback: {result['playback_label']}. Pitch reference: {result['reference_label']}. \n"
                         f"{result['axis_text']}"
                     )
 
@@ -362,8 +510,8 @@ class SingingPracticeGUI:
                     self.diff_var.set("Diff: -")
                     self.feedback_var.set("Feedback: -")
 
-                self.mic_plot_data.append(float(mic_midi) if mic_midi is not None else np.nan)
-                self.song_plot_data.append(float(song_midi) if song_midi is not None else np.nan)
+                self.mic_plot_data.append(self._plot_midi_value(mic_midi))
+                self.song_plot_data.append(self._plot_midi_value(song_midi))
 
             self._refresh_plot()
 
@@ -397,15 +545,31 @@ class SingingPracticeGUI:
             return
         self.playback_time_var.set(f"{self._format_time(pos)} / {self._format_time(self.track_duration_seconds)}")
 
+    def _plot_midi_value(self, midi_value):
+        if midi_value is None:
+            return np.nan
+        val = float(midi_value)
+        if not np.isfinite(val):
+            return np.nan
+        if val < MIN_MIDI or val > MAX_MIDI:
+            return np.nan
+        return val
+
     def _refresh_plot(self):
         if len(self.mic_plot_data) == 0 and len(self.song_plot_data) == 0:
             return
-        mic_y = np.array(self.mic_plot_data, dtype=np.float32)
-        song_y = np.array(self.song_plot_data, dtype=np.float32)
-        x_mic = np.arange(len(mic_y), dtype=np.float32)
-        x_song = np.arange(len(song_y), dtype=np.float32)
-        self.mic_plot_line.set_data(x_mic, mic_y)
-        self.song_plot_line.set_data(x_song, song_y)
+
+        # Keep unvoiced/invalid frames as blank gaps on the plot.
+        mic_y = np.array(self.mic_plot_data, dtype=np.float64)
+        song_y = np.array(self.song_plot_data, dtype=np.float64)
+        x_mic = np.arange(len(mic_y), dtype=np.float64)
+        x_song = np.arange(len(song_y), dtype=np.float64)
+
+        mic_masked = np.ma.masked_invalid(mic_y)
+        song_masked = np.ma.masked_invalid(song_y)
+
+        self.mic_plot_line.set_data(x_mic, mic_masked)
+        self.song_plot_line.set_data(x_song, song_masked)
         self.ax.set_xlim(0, max(240, len(mic_y), len(song_y)))
         self.canvas.draw_idle()
 
