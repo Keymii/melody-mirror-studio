@@ -31,21 +31,15 @@ git clone https://github.com/Keymii/melody-mirror-studio.git
 cd melody-mirror-studio
 ```
 
-### 2. Create and activate a virtual environment
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-### 3. Install dependencies
+### 2. Install dependencies
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 4. Ensure FFmpeg is installed
+### 3. Ensure FFmpeg is installed
 This project relies on FFmpeg for audio extraction via yt-dlp. Install FFmpeg and make sure it is available on your system PATH.
 
-### 5. Run the app
+### 4. Run the app
 ```powershell
 python main.py
 ```
